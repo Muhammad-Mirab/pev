@@ -1,3 +1,9 @@
+# TODO: show pev variables in columns using "paste" and two separate arrays.
+# TODO: update messages (e.g: pevshow --> pev show & etc.)
+# TODO: do not allow "add" "delete" "show" "help|--help" "version|--version" "error" as pev names.
+# TODO: Apalog it!
+# TODO: Use regex in the ~/.pev for the case "*" instead of searching through the whole environment variables
+# TODO: Put hard-coded ~/.pev in a variable.
 pev(){
 	case $1 in
 	init)
@@ -6,10 +12,9 @@ pev(){
 	;;	
 	add)
 		if [[ ! -z "${!2}" ]]; then echo -e -n "\tError: This name exists already.\n\t$2="; eval "echo \${$2}"; return; fi
-		if [[ ! $2 =~ "pev_" ]]; then echo -e -n "\tError: This name is not allowed. Entered name must start with \"pev_\"\n"; return; fi
 		if [[ -z $3 ]]; then echo -e -n "\tError: Value is not entered. Create a pev variable like this: \"pevadd NAME VALUE\"\n\""; return; fi
-		echo "export $2=\"$3\"" | sudo tee -a ~/.pev > /dev/null
-		echo "environment variable \"$2\" added successfully. \"pevshow\" to see the list of pev variables."
+		echo "export pev_$2=\"$3\"" | sudo tee -a ~/.pev > /dev/null
+		echo "environment variable \"pev_$2\" added successfully. \"pevshow\" to see the list of pev variables."
 		source ~/.pev
 	;;
 	delete)
@@ -18,14 +23,14 @@ pev(){
 		pevdeletebool=false
 		while read -r line
 			do
-				if [[ ! $line =~ "export $2=" ]]
+				if [[ ! $line =~ "export pev_$2=" ]]
 				then
 					echo "$line"
 				else
 					pevdeletebool=true
 				fi
 			done <~/.pev > >(sudo tee -a pevtemp > /dev/null)
-			if [[ $pevdeletebool = true ]]; then echo "unset $2" | tee pevtemp2 > /dev/null; source pevtemp2; rm pevtemp2; fi
+			if [[ $pevdeletebool = true ]]; then echo "unset pev_$2" | tee pevtemp2 > /dev/null; source pevtemp2; rm pevtemp2; fi
 		sudo mv pevtemp ~/.pev
 		source ~/.pev
 	;;
@@ -45,18 +50,28 @@ pev(){
 		source ~/.pev
 	;;
 	help|--help)
-		echo -e "\n\tPEV-Version-0.1"
-		echo -e "\n\tpev [ add | delete | show | edit | help ]\n"
+		echo -e "\n\tPEV-Version-0.2"
+		echo -e "\n\tpev [ <NAME> | add <NAME> <VALUE> | delete <NAME> | show | edit | help ]\n"
+		echo -e "\tpev <NAME>: \n\t\techos the value of Personal Environment Variable named <NAME>\n"
 		echo -e "\tpev add <NAME> <VALUE>:\n\t\tAdds a Personal Environment Variable\n"
 		echo -e "\tpev delete <NAME>:\n\t\tDeletes a Personal Environment Variable\n"
 		echo -e "\tpev show:\n\t\tShows a list of Personal Environment Variables\n"
 		echo -e "\tpev edit:\n\t\tEdit the list of Personal Environment Variables manually(NOT RECOMMENDED)\n"
 	;;
 	version|--version)
-		echo -e "\n\tPEV-Version-0.1\n"
+		echo -e "\n\tPEV-Version-0.2\n"
+	;;
+	error)
+		echo -e "\n\tpev [ <NAME> | add <NAME> <VALUE> | delete <NAME> | show | edit | help ]\n"
 	;;
 	*)
-		echo -e "\n\tpev [ add | delete | show | edit | help ]\n"
+		pevreq=pev_$1
+		if [[ ! -z ${!pevreq} ]]
+		then
+			eval "echo \$pev_$1"
+		else
+			pev error
+		fi
 	;;
 	esac
 }
