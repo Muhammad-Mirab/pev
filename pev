@@ -5,6 +5,7 @@
 #
 
 pev(){
+	pev_version=0.3
 	case $1 in
 	init)
 		touch ~/.pev
@@ -12,7 +13,8 @@ pev(){
 	;;	
 	add)
 		pevreq=pev_$2
-		if [[ ! -z "${!pevreq}" ]]; then echo -e -n "\tError: This name exists already.\n\t$pevreq="; eval "echo \$${pevreq}"; return; fi
+		if grep -Pq "[^\w\d_-]" <<< $pevreq; then echo -e -n "\tError: Entered name contains illegal characters.\n"; return; fi
+		if [[ ! -z "${!pevreq}" ]]; then echo -e -n "\tError: A variable with entered name exists already.\n\t$pevreq="; eval "echo \$${pevreq}"; return; fi
 		if [[ -z $3 ]]; then echo -e -n "\tError: Value is not entered. Create a pev variable like this: \"pev add NAME VALUE\"\n\""; return; fi
 		echo "export pev_$2=\"$3\"" | sudo tee -a ~/.pev > /dev/null
 		echo "environment variable \"pev_$2\" added successfully. \"pev show\" to see the list of pev variables."
@@ -59,23 +61,23 @@ pev(){
 		source ~/.pev
 	;;
 	help|--help)
-		echo -e "\n\tPEV-Version-0.2"
+		echo -e "\n\tPEV-Version-"$pev_version
 		echo -e "\n\tpev [ <NAME> | add <NAME> <VALUE> | remove <NAME> | show | edit | help ]\n"
-		echo -e "\tpev <NAME>: \n\t\techos the value of Personal Environment Variable named <NAME>\n"
+		echo -e "\tpev <NAME>: \n\t\techoes the value of the Personal Environment Variable named <NAME>\n"
 		echo -e "\tpev add <NAME> <VALUE>:\n\t\tAdds a Personal Environment Variable\n"
 		echo -e "\tpev remove <NAME>:\n\t\tRemoves a Personal Environment Variable\n"
 		echo -e "\tpev show:\n\t\tShows a list of Personal Environment Variables\n"
 		echo -e "\tpev edit:\n\t\tEdit the list of Personal Environment Variables manually(NOT RECOMMENDED)\n"
 	;;
 	version|--version)
-		echo -e "\n\tPEV-Version-0.2\n"
+		echo -e "\n\tPEV-Version-"$pev_version"\n"
 	;;
 	error)
 		echo -e "\n\tpev [ <NAME> | add <NAME> <VALUE> | remove <NAME> | show | edit | help ]\n"
 	;;
 	*)
 		pevreq=pev_$1
-		if [[ ! -z ${!pevreq} ]]
+		if grep -Pq "$pevreq=" ~/.pev
 		then
 			eval "echo \$pev_$1"
 		else
