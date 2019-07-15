@@ -32,15 +32,17 @@ pev remove pi
 echo '===================='
 pev help
 pev remove dfsdg
-pev remove 32234
+pev remove 234abc
 pev remove pev
 pev add
 pev add this
 pev add moustache !~!
 pev show
 echo '===================='
-unset pev_moustache
-unset pev_scripts
-unset pev_downs
-unset pev_tt
-unset pev_jumble
+pev remove moustache
+pev remove scripts
+pev remove downs
+pev remove tt
+pev remove jumble
+echo '===================='
+pev show

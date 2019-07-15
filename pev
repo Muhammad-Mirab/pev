@@ -16,6 +16,7 @@ pev(){
 		if grep -Pq "[^\w\d_-]" <<< $pevreq; then echo -e -n "\tError: Entered name contains illegal characters.\n"; return; fi
 		if [[ ! -z "${!pevreq}" ]]; then echo -e -n "\tError: A variable with entered name exists already.\n\t$pevreq="; eval "echo \$${pevreq}"; return; fi
 		if [[ -z $3 ]]; then echo -e -n "\tError: Value is not entered. Create a pev variable like this: \"pev add NAME VALUE\"\n\""; return; fi
+		if grep -q "=" <<< $3; then echo -e -n "\tError: Entered value contains illegal character \"=\".\n"; return; fi
 		echo "export pev_$2=\"$3\"" | sudo tee -a ~/.pev > /dev/null
 		echo "environment variable \"pev_$2\" added successfully. \"pev show\" to see the list of pev variables."
 		source ~/.pev
@@ -47,13 +48,19 @@ pev(){
 	;;
 	show)
 		if [[ ! -e ~/.pev ]]; then pev init; fi
-		pevarray=$( (cat ~/.pev | grep -P -o '\w[\w\d_\-]*?=[\w\W]+?$') )
-		if [[ ! ${#pevarray[@]} -eq 0 ]]
-		then
-			printf '\t%s\n' ${pevarray[@]}
-		else
-			echo "no pev variables exist"
-		fi
+		echo -e '\n'
+		touch pev_temp1
+		echo -e "NAMES\n----------" > pev_temp1
+		touch pev_temp2
+		echo -e "VALUES\n----------" > pev_temp2
+		pev_names_array=( $(grep -Poh "[\w\d_\-]+=[^=]+" ~/.pev | cut -d "=" -f 1) )
+		echo "${pev_names_array[@]}" | sed "s/ /\n/g" >> pev_temp1
+		sed -i "s/^/   |   /" pev_temp1
+		pev_values_array=( $(grep -Poh "[\w\d_\-]+=[\w\W\=]+" ~/.pev | cut -d "=" -f 2) )
+		echo "${pev_values_array[@]}" | sed "s/ /\n/g" >> pev_temp2
+		paste pev_temp1 pev_temp2 | expand -t $(( $(wc -L < pev_temp1) + 3 ))
+		rm pev_temp1 pev_temp2		
+		echo -e '\n'
 	;;
 	edit)
 		if [[ ! -e ~/.pev ]]; then pev init; fi
