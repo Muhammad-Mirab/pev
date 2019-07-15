@@ -1,9 +1,9 @@
-# TODO: show pev variables in columns using "paste" and two separate arrays.
-# TODO: update messages (e.g: pevshow --> pev show & etc.)
-# TODO: do not allow "add" "delete" "show" "help|--help" "version|--version" "error" as pev names.
-# TODO: Apalog it!
-# TODO: Use regex in the ~/.pev for the case "*" instead of searching through the whole environment variables
-# TODO: Put hard-coded ~/.pev in a variable.
+# Github:
+# "pev" is the way to manage personal-environment-variables
+#
+#
+#
+
 pev(){
 	case $1 in
 	init)

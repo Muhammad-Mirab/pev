@@ -1,0 +1,42 @@
+sudo cp /dev/null ~/.pev
+unset pev_d
+unset pev_python
+unset pev_downs
+pev add d /mnt/d/
+pev add python /mnt/d/2019/python/
+pev add downs /mnt/d/Files_And_Downloads/
+pev add scripts ~/myScripts/
+pev show
+echo '===================='
+pev remove python
+echo '===================='
+pev show
+echo '===================='
+pev remove d
+echo '===================='
+pev show
+echo '===================='
+pev add tt '!@#$%^&*()_+=-'
+pev add tt something-else
+pev add pi 3.1415
+pev show
+echo '===================='
+pev sdfgdf
+pev pi
+pev downs
+pev remove pi
+echo '===================='
+pev help
+pev remove dfsdg
+pev remove 32234
+pev remove pev
+pev add
+pev add this
+pev add moustache !~!
+pev show
+echo '===================='
+unset pev_moustache
+unset pev_scripts
+unset pev_downs
+unset pev_tt
+unset pev_jumble
