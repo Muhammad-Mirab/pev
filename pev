@@ -11,32 +11,41 @@ pev(){
 		source ~/.pev
 	;;	
 	add)
-		if [[ ! -z "${!2}" ]]; then echo -e -n "\tError: This name exists already.\n\t$2="; eval "echo \${$2}"; return; fi
-		if [[ -z $3 ]]; then echo -e -n "\tError: Value is not entered. Create a pev variable like this: \"pevadd NAME VALUE\"\n\""; return; fi
+		pevreq=pev_$2
+		if [[ ! -z "${!pevreq}" ]]; then echo -e -n "\tError: This name exists already.\n\t$pevreq="; eval "echo \$${pevreq}"; return; fi
+		if [[ -z $3 ]]; then echo -e -n "\tError: Value is not entered. Create a pev variable like this: \"pev add NAME VALUE\"\n\""; return; fi
 		echo "export pev_$2=\"$3\"" | sudo tee -a ~/.pev > /dev/null
-		echo "environment variable \"pev_$2\" added successfully. \"pevshow\" to see the list of pev variables."
+		echo "environment variable \"pev_$2\" added successfully. \"pev show\" to see the list of pev variables."
 		source ~/.pev
 	;;
-	delete)
-		if [[ ! -e ~/.pev ]]; then pevinit; fi
-		touch pevtemp
-		pevdeletebool=false
+	remove)
+		if [[ ! -e ~/.pev ]]; then pev init; fi
+		sudo touch pevtemp
+		pevremovebool=false
 		while read -r line
 			do
 				if [[ ! $line =~ "export pev_$2=" ]]
 				then
 					echo "$line"
 				else
-					pevdeletebool=true
+					pevremovebool=true
 				fi
 			done <~/.pev > >(sudo tee -a pevtemp > /dev/null)
-			if [[ $pevdeletebool = true ]]; then echo "unset pev_$2" | tee pevtemp2 > /dev/null; source pevtemp2; rm pevtemp2; fi
+			if [[ $pevremovebool = true ]]
+			then
+				echo "unset pev_$2" | sudo tee pevtemp2 > /dev/null
+				source pevtemp2
+				sudo rm pevtemp2
+				echo -e "\tpev variable removed successfully"
+			else
+				echo -e "\tError: pev variable does not exist."
+			fi
 		sudo mv pevtemp ~/.pev
 		source ~/.pev
 	;;
 	show)
-		if [[ ! -e ~/.pev ]]; then pevinit; fi
-		pevarray=$( (cat ~/.pev | grep -P -o '[\w_]*?=["\w\/]+?$') )
+		if [[ ! -e ~/.pev ]]; then pev init; fi
+		pevarray=$( (cat ~/.pev | grep -P -o '\w[\w\d_\-]*?=[\w\W]+?$') )
 		if [[ ! ${#pevarray[@]} -eq 0 ]]
 		then
 			printf '\t%s\n' ${pevarray[@]}
@@ -45,16 +54,16 @@ pev(){
 		fi
 	;;
 	edit)
-		if [[ ! -e ~/.pev ]]; then pevinit; fi
+		if [[ ! -e ~/.pev ]]; then pev init; fi
 		sudo nano ~/.pev
 		source ~/.pev
 	;;
 	help|--help)
 		echo -e "\n\tPEV-Version-0.2"
-		echo -e "\n\tpev [ <NAME> | add <NAME> <VALUE> | delete <NAME> | show | edit | help ]\n"
+		echo -e "\n\tpev [ <NAME> | add <NAME> <VALUE> | remove <NAME> | show | edit | help ]\n"
 		echo -e "\tpev <NAME>: \n\t\techos the value of Personal Environment Variable named <NAME>\n"
 		echo -e "\tpev add <NAME> <VALUE>:\n\t\tAdds a Personal Environment Variable\n"
-		echo -e "\tpev delete <NAME>:\n\t\tDeletes a Personal Environment Variable\n"
+		echo -e "\tpev remove <NAME>:\n\t\tRemoves a Personal Environment Variable\n"
 		echo -e "\tpev show:\n\t\tShows a list of Personal Environment Variables\n"
 		echo -e "\tpev edit:\n\t\tEdit the list of Personal Environment Variables manually(NOT RECOMMENDED)\n"
 	;;
@@ -62,7 +71,7 @@ pev(){
 		echo -e "\n\tPEV-Version-0.2\n"
 	;;
 	error)
-		echo -e "\n\tpev [ <NAME> | add <NAME> <VALUE> | delete <NAME> | show | edit | help ]\n"
+		echo -e "\n\tpev [ <NAME> | add <NAME> <VALUE> | remove <NAME> | show | edit | help ]\n"
 	;;
 	*)
 		pevreq=pev_$1
