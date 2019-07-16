@@ -1,28 +1,28 @@
-# Github:
+# Github: https://github.com/aderchox/pev
 # "pev" is the way to manage personal-environment-variables
-#
-#
-#
+# Author [ Mojtabaa Vahdati ] --> Please email me at [ aderchox@gmail.com ] for any feedback.
 
 pev(){
-	pev_version=0.3
+	pev_version=0.9
+	pev_version_date="July 2019"
+	pev_list_file=~/.pev
 	case $1 in
 	init)
-		touch ~/.pev
-		source ~/.pev
+		touch $pev_list_file
+		source $pev_list_file
 	;;	
 	add)
 		pevreq=pev_$2
 		if grep -Pq "[^\w\d_-]" <<< $pevreq; then echo -e -n "\tError: Entered name contains illegal characters.\n"; return; fi
 		if [[ ! -z "${!pevreq}" ]]; then echo -e -n "\tError: A variable with entered name exists already.\n\t$pevreq="; eval "echo \$${pevreq}"; return; fi
 		if [[ -z $3 ]]; then echo -e -n "\tError: Value is not entered. Create a pev variable like this: \"pev add NAME VALUE\"\n\""; return; fi
-		if grep -q "=" <<< $3; then echo -e -n "\tError: Entered value contains illegal character \"=\".\n"; return; fi
-		echo "export pev_$2=\"$3\"" | sudo tee -a ~/.pev > /dev/null
+		if grep -q "[=\"\']" <<< $3; then echo -e -n "\tError: Entered value contains illegal characters.\n"; return; fi
+		echo "export pev_$2=\"$3\"" | sudo tee -a $pev_list_file > /dev/null
 		echo "environment variable \"pev_$2\" added successfully. \"pev show\" to see the list of pev variables."
-		source ~/.pev
+		source $pev_list_file
 	;;
 	remove)
-		if [[ ! -e ~/.pev ]]; then pev init; fi
+		if [[ ! -e $pev_list_file ]]; then pev init; fi
 		sudo touch pevtemp
 		pevremovebool=false
 		while read -r line
@@ -33,7 +33,7 @@ pev(){
 				else
 					pevremovebool=true
 				fi
-			done <~/.pev > >(sudo tee -a pevtemp > /dev/null)
+			done <$pev_list_file > >(sudo tee -a pevtemp > /dev/null)
 			if [[ $pevremovebool = true ]]
 			then
 				echo "unset pev_$2" | sudo tee pevtemp2 > /dev/null
@@ -43,48 +43,62 @@ pev(){
 			else
 				echo -e "\tError: pev variable does not exist."
 			fi
-		sudo mv pevtemp ~/.pev
-		source ~/.pev
+		sudo mv pevtemp $pev_list_file
+		source $pev_list_file
 	;;
 	show)
-		if [[ ! -e ~/.pev ]]; then pev init; fi
+		if [[ ! -e $pev_list_file ]]; then pev init; fi
 		echo -e '\n'
 		touch pev_temp1
 		echo -e "NAMES\n----------" > pev_temp1
 		touch pev_temp2
 		echo -e "VALUES\n----------" > pev_temp2
-		pev_names_array=( $(grep -Poh "[\w\d_\-]+=[^=]+" ~/.pev | cut -d "=" -f 1) )
+		pev_names_array=( $(grep -Poh "[\w\d_\-]+=[^=]+" $pev_list_file | cut -d "=" -f 1) )
 		echo "${pev_names_array[@]}" | sed "s/ /\n/g" >> pev_temp1
 		sed -i "s/^/   |   /" pev_temp1
-		pev_values_array=( $(grep -Poh "[\w\d_\-]+=[\w\W\=]+" ~/.pev | cut -d "=" -f 2) )
+		pev_values_array=( $(grep -Poh "[\w\d_\-]+=[\w\W\=]+" $pev_list_file | cut -d "=" -f 2) )
 		echo "${pev_values_array[@]}" | sed "s/ /\n/g" >> pev_temp2
 		paste pev_temp1 pev_temp2 | expand -t $(( $(wc -L < pev_temp1) + 3 ))
 		rm pev_temp1 pev_temp2		
 		echo -e '\n'
 	;;
 	edit)
-		if [[ ! -e ~/.pev ]]; then pev init; fi
-		sudo nano ~/.pev
-		source ~/.pev
+		if [[ ! -e $pev_list_file ]]; then pev init; fi
+		if [[ -z $3 ]]
+		then
+			sudo nano $pev_list_file
+		else
+			if grep -Pq "pev_$2\=" $pev_list_file
+			then
+				pevvalue=$(grep -Poh "pev_$2=[^=]+" $pev_list_file | cut -d "=" -f 2)
+				sed -i "s/$pevvalue/\"$3\"/" $pev_list_file
+			else
+				echo -e "\tError: No pev variable with the entered name exists."
+				return
+			fi
+		fi
+		source $pev_list_file
 	;;
 	help|--help)
-		echo -e "\n\tPEV-Version-"$pev_version
-		echo -e "\n\tpev [ <NAME> | add <NAME> <VALUE> | remove <NAME> | show | edit | help ]\n"
+		echo -e "\n\tPEV-Version-"$pev_version" "$pev_version_date"\n"
+		echo -e "\n\tpev [ <NAME> | add <NAME> <VALUE> | remove <NAME> | show | edit <NAME> <NEW-VALUE> | edit | help ]\n"
 		echo -e "\tpev <NAME>: \n\t\techoes the value of the Personal Environment Variable named <NAME>\n"
 		echo -e "\tpev add <NAME> <VALUE>:\n\t\tAdds a Personal Environment Variable\n"
 		echo -e "\tpev remove <NAME>:\n\t\tRemoves a Personal Environment Variable\n"
 		echo -e "\tpev show:\n\t\tShows a list of Personal Environment Variables\n"
+		echo -e "\tpev edit <NAME> <NEW-VALUE>:\n\t\tChange the value of a predefined pev variable to a <NEW-VALUE>\n"
 		echo -e "\tpev edit:\n\t\tEdit the list of Personal Environment Variables manually(NOT RECOMMENDED)\n"
+		echo -e "\n\tAuthor [ Mojtabaa Vahdati ] --> Please email me at [ aderchox@gmail.com ] for any feedback.\n"
 	;;
 	version|--version)
-		echo -e "\n\tPEV-Version-"$pev_version"\n"
+		echo -e "\n\tPEV-Version-"$pev_version" "$pev_version_date"\n"
 	;;
 	error)
-		echo -e "\n\tpev [ <NAME> | add <NAME> <VALUE> | remove <NAME> | show | edit | help ]\n"
+		echo -e "\n\tError! Please use pev according to this:\n\tpev [ <NAME> | add <NAME> <VALUE> | remove <NAME> | show | edit <NAME> <NEW-VALUE> | edit | help ]\n"
 	;;
 	*)
 		pevreq=pev_$1
-		if grep -Pq "$pevreq=" ~/.pev
+		if grep -Pq "$pevreq=" $pev_list_file
 		then
 			eval "echo \$pev_$1"
 		else
