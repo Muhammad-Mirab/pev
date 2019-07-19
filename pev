@@ -16,7 +16,7 @@ pev(){
 		if grep -Pq "[^\w\d_-]" <<< $pevname; then echo -e -n "\tError: Entered name contains illegal characters.\n"; return; fi
 		if [[ ! -z "${!pevname}" ]]; then echo -e -n "\tError: A variable with entered name exists already.\n\t$pevname="; eval "echo \$${pevname}"; return; fi
 		if [[ -z $3 ]]; then echo -e -n "\tError: Value is not entered. Create a pev variable like this: \"pev add NAME VALUE\"\n\""; return; fi
-		pevval=$(sed 's| |?|' <<< "$3")
+		pevval=$(sed 's| |?|g' <<< "$3")
 		if grep -q "[=\"\']" <<< $pevval; then echo -e -n "\tError: Entered value contains illegal characters.\n"; return; fi
 		echo "export pev_$2=\"$pevval\"" | sudo tee -a $pev_list_file > /dev/null
 		echo "environment variable \"pev_$2\" added successfully. \"pev show\" to see the list of pev variables."
