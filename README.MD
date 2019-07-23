@@ -50,6 +50,12 @@ Or you can go deeper too:
 $ cp somefile $pev_longpath/and/deeper/than/that
 ```
 ---
+# **Installation**:
+assuming you put the "pev" file in your `foo` directory you should add this to your ~/.bashrc:
+```
+source ~/.pev
+source /path/too/foo/pev
+```
 
 # **Usage**:
 
