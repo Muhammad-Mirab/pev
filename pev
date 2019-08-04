@@ -18,7 +18,7 @@ pev(){
 	}
 
 	local pev_version=0.9.1
-	local pev_version_date="$(date '+%B-%Y')"
+	local pev_version_date=August-2019
 	local pev_list_file=~/.pev
 
 	if [[ ! -e ~/tmp || ! -d ~/tmp ]]
@@ -115,15 +115,35 @@ pev(){
 		source $pev_list_file
 	;;
 	help|--help)
-		echo -e "\n\tPEV-Version-"$pev_version" "$pev_version_date"\n"
-		echo -e "\n\tpev [ <NAME> | add <NAME> <VALUE> | remove <NAME> | show | edit <NAME> <NEW-VALUE> | edit | help ]\n"
-		echo -e "\tpev <NAME>: \n\t\techoes the value of the Personal Environment Variable named <NAME>\n"
-		echo -e "\tpev add <NAME> <VALUE>:\n\t\tAdds a Personal Environment Variable\n"
-		echo -e "\tpev remove <NAME>:\n\t\tRemoves a Personal Environment Variable\n"
-		echo -e "\tpev show:\n\t\tShows a list of Personal Environment Variables\n"
-		echo -e "\tpev edit <NAME> <NEW-VALUE>:\n\t\tChange the value of a predefined pev variable to a <NEW-VALUE>\n"
-		echo -e "\tpev edit:\n\t\tEdit the list of Personal Environment Variables manually(NOT RECOMMENDED)\n"
-		echo -e "\n\tAuthor [ Mojtabaa Vahdati ] --> Please email me at [ aderchox@gmail.com ] for any feedback.\n"
+		cat << START
+
+		    PEV-Version-"$pev_version" "$pev_version_date"
+
+
+		    pev [ <NAME> | add <NAME> <VALUE> | remove <NAME> | show | edit <NAME> <NEW-VALUE> | edit | help ]
+
+		    pev <NAME>:
+		        echoes the value of the Personal Environment Variable named <NAME>
+
+		    pev add <NAME> <VALUE>:
+		        Adds a Personal Environment Variable
+
+		    pev remove <NAME>:
+		        Removes a Personal Environment Variable
+
+		    pev show:
+		        Shows a list of Personal Environment Variables
+
+		    pev edit <NAME> <NEW-VALUE>:
+		        Change the value of a predefined pev variable to a <NEW-VALUE>
+
+		    pev edit:
+		        Edit the list of Personal Environment Variables manually(NOT RECOMMENDED)
+
+
+		    Author [ Mojtabaa Vahdati ] --> Please email me at [ aderchox@gmail.com ] for any feedback.
+
+START
 	;;
 	version|--version)
 		echo -e "\n\tPEV-Version-"$pev_version" "$pev_version_date"\n"
