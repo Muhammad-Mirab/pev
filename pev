@@ -3,20 +3,46 @@
 # Author [ Mojtabaa Vahdati ] --> Please email me at [ aderchox@gmail.com ] for any feedback.
 
 pev(){
-	pev_version=0.9
-	pev_version_date="July 2019"
-	pev_list_file=~/.pev
+	trap 'cleanup' EXIT RETURN INT TERM
+
+	cleanup() {
+		if [[ -d "${pev_temp_dir}" ]]
+			then
+				if [[ ! -d ~/tmp || $no_user_temp_dir == true ]]
+				then
+					rm -rf $user_temp_dir
+				else
+					rm -rf $pev_temp_dir
+				fi
+		fi
+	}
+
+	local pev_version=0.9.1
+	local pev_version_date="$(date '+%B-%Y')"
+	local pev_list_file=~/.pev
+
+	if [[ ! -e ~/tmp || ! -d ~/tmp ]]
+	then
+		test ! -e ~/tmp && no_user_temp_dir=true && user_temp_dir=~/tmp;
+		test -e ~/tmp && ! -d ~/tmp && no_user_temp_dir=true && user_temp_dir=~/tmp.$RANDOM;
+	else
+		no_user_temp_dir=false && user_temp_dir=~/tmp
+	fi
+	pev_temp_dir=$user_temp_dir/pev_temp
+	local pev_user=$(whoami)
+	umask 077 && sudo -u $pev_user mkdir -p $pev_temp_dir
+
 	case $1 in
 	init)
 		touch $pev_list_file
 		source $pev_list_file
-	;;	
+	;;
 	add)
-		pevname=pev_$2
+		local pevname=pev_$2
 		if grep -Pq "[^\w\d_-]" <<< $pevname; then echo -e -n "\tError: Entered name contains illegal characters.\n"; return; fi
 		if [[ ! -z "${!pevname}" ]]; then echo -e -n "\tError: A variable with entered name exists already.\n\t$pevname="; eval "echo \$${pevname}"; return; fi
-		if [[ -z $3 ]]; then echo -e -n "\tError: Value is not entered. Create a pev variable like this: \"pev add NAME VALUE\"\n\""; return; fi
-		pevval=$(sed 's| |?|g' <<< "$3")
+		if [[ $# != 3 ]]; then echo -e -n "\tError: Either name or value is not entered. Create a pev variable like this: \"pev add NAME VALUE\"\n\""; return; fi
+		local pevval=$(sed 's| |?|g' <<< "$3")
 		if grep -q "[=\"\']" <<< $pevval; then echo -e -n "\tError: Entered value contains illegal characters.\n"; return; fi
 		echo "export pev_$2=\"$pevval\"" | sudo tee -a $pev_list_file > /dev/null
 		echo "environment variable \"pev_$2\" added successfully. \"pev show\" to see the list of pev variables."
@@ -24,8 +50,10 @@ pev(){
 	;;
 	remove)
 		if [[ ! -e $pev_list_file ]]; then pev init; fi
-		sudo touch pevtemp
-		pevremovebool=false
+		sudo touch $pev_temp_dir/pevtemp $pev_temp_dir/pevtemp2
+		sudo chmod u+x $pev_temp_dir/pevtemp $pev_temp_dir/pevtemp2
+		sudo chown $pev_user:$pev_user $pev_temp_dir/pevtemp2
+		local pevremovebool=false
 		while read -r line
 			do
 				if [[ ! $line =~ "export pev_$2=" ]]
@@ -34,51 +62,56 @@ pev(){
 				else
 					pevremovebool=true
 				fi
-			done <$pev_list_file > >(sudo tee -a pevtemp > /dev/null)
+			done <$pev_list_file > >(sudo tee -a $pev_temp_dir/pevtemp > /dev/null)
 			if [[ $pevremovebool = true ]]
 			then
-				echo "unset pev_$2" | sudo tee pevtemp2 > /dev/null
-				source pevtemp2
-				sudo rm pevtemp2
+				echo "unset pev_$2" | sudo tee $pev_temp_dir/pevtemp2 > /dev/null
+				trap '' RETURN EXIT
+				source $pev_temp_dir/pevtemp2
+				trap 'cleanup' RETURN EXIT
+				sudo rm -f $pev_temp_dir/pevtemp2
 				echo -e "\tpev variable removed successfully"
 			else
 				echo -e "\tError: pev variable does not exist."
 			fi
-		sudo mv pevtemp $pev_list_file
+		sudo mv $pev_temp_dir/pevtemp $pev_list_file
+		sudo chown $pev_user:$pev_user $pev_list_file
 		source $pev_list_file
 	;;
 	show)
 		if [[ ! -e $pev_list_file ]]; then pev init; fi
 		echo -e '\n'
-		touch pev_temp1
-		echo -e "NAMES\n----------" > pev_temp1
-		touch pev_temp2
-		echo -e "VALUES\n----------" > pev_temp2
-		pev_names_array=( $(grep -Poh "[\w\d_\-]+=[^=]+" $pev_list_file | cut -d "=" -f 1) )
-		echo "${pev_names_array[@]}" | sed "s/ /\n/g" >> pev_temp1
-		sed -i "s/^/   |   /" pev_temp1
-		pev_values_array=( $(grep -Poh "[\w\d_\-]+=[\w\W\=]+" $pev_list_file | cut -d "=" -f 2) )
-		echo "${pev_values_array[@]}" | sed "s/ /\n/g" >> pev_temp2
-		paste pev_temp1 pev_temp2 | expand -t $(( $(wc -L < pev_temp1) + 3 ))
-		rm pev_temp1 pev_temp2		
+		touch $pev_temp_dir/pev_temp1
+		echo -e "NAMES\n----------" > $pev_temp_dir/pev_temp1
+		touch $pev_temp_dir/pev_temp2
+		echo -e "VALUES\n----------" > $pev_temp_dir/pev_temp2
+		local pev_names_array=( $(grep -Poh "[\w\d_\-]+=[^=]+" $pev_list_file | cut -d "=" -f 1) )
+		echo "${pev_names_array[@]}" | sed "s/ /\n/g" >> $pev_temp_dir/pev_temp1
+		sed -i "s/^/   |   /" $pev_temp_dir/pev_temp1
+		local pev_values_array=( $(grep -Poh "[\w\d_\-]+=[\w\W\=]+" $pev_list_file | cut -d "=" -f 2) )
+		echo "${pev_values_array[@]}" | sed "s/ /\n/g" >> $pev_temp_dir/pev_temp2
+		paste $pev_temp_dir/pev_temp1 $pev_temp_dir/pev_temp2 | expand -t $(( $(wc -L < $pev_temp_dir/pev_temp1) + 3 ))
+		rm $pev_temp_dir/pev_temp1 $pev_temp_dir/pev_temp2
 		echo -e '\n'
 	;;
 	edit)
-		if [[ ! -e $pev_list_file ]]; then pev init; fi
-		if [[ -z $3 ]]
-		then
-			sudo nano $pev_list_file
-		else
-			if grep -q "[=\"\']" <<< $3; then echo -e -n "\tError: Entered value contains illegal characters.\n"; return; fi
-			if grep -Pq "pev_$2\=" $pev_list_file
-			then
-				pevvalue=$(grep -Poh "pev_$2=[^=]+" $pev_list_file | cut -d "=" -f 2)
-				sed -i "s'$pevvalue'\"$3\"'" $pev_list_file
-			else
-				echo -e "\tError: No pev variable with the entered name exists."
-				return
-			fi
-		fi
+        if [[ ! -e $pev_list_file ]]; then pev init; fi
+        if [[ $# == 1 ]]
+        then
+            sudo nano $pev_list_file
+        else
+            if [[ $# != 3 ]]; then echo -e -n "\tError: Either name or value is not entered. Create a pev variable like this: \"pev add NAME VALUE\"\n\""; return; fi
+            pev_newval=$(sed 's| |?|g' <<< "$3")
+            if grep -q "[=\"\']" <<< $pev_newval; then echo -e -n "\tError: Entered value contains illegal characters.\n"; return; fi
+            if grep -Pq "pev_$2\=" $pev_list_file
+            then
+                pev_oldval=$(grep -Poh "pev_$2=[^=]+" $pev_list_file | cut -d "=" -f 2)
+                sed -i "s'$pev_oldval'\"$pev_newval\"'" $pev_list_file
+            else
+                echo -e "\tError: No pev variable with the entered name exists."
+                return
+            fi
+        fi
 		source $pev_list_file
 	;;
 	help|--help)
@@ -99,7 +132,7 @@ pev(){
 		echo -e "\n\tError! Please use pev according to this:\n\tpev [ <NAME> | add <NAME> <VALUE> | remove <NAME> | show | edit <NAME> <NEW-VALUE> | edit | help ]\n"
 	;;
 	*)
-		pevreq=pev_$1
+		local pevreq=pev_$1
 		if grep -Pq "$pevreq=" $pev_list_file
 		then
 			eval "printf '%s\n' \"\$pev_$1\""
